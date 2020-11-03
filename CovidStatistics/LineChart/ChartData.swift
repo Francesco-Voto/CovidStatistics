@@ -6,4 +6,16 @@
 //  Copyright © 2020 Francesco Voto. All rights reserved.
 //
 
-import Foundation
+import SwiftUI
+
+struct ChartData: Hashable {
+    
+    let dataKey: String
+    let color: Color
+    var points: [Int]
+    let label: String
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(dataKey)
+    }
+}

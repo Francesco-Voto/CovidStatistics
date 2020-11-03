@@ -9,13 +9,18 @@
 import SwiftUI
 
 struct ContentView: View {
+
     var body: some View {
-        Text("Hello, World!")
+        VStack(alignment: .center) {
+            ChartView(viewModel: ChartViewModel())
+        }.background(Color.green)
+        
     }
 }
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
+       
         ContentView()
     }
 }

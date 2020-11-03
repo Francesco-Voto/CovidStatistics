@@ -9,6 +9,52 @@
 import Foundation
 import SwiftCSV
 import RxSwift
+import Combine
+
+class CsvHandler: NSObject {
+    
+    static func getCsv() -> Future<CSV, Error> {
+        return Future<CSV, Error> { promise in
+            do {
+                let csvData = try String(contentsOf: NSURL(string: "https://raw.githubusercontent.com/sarscov2-it/data/master/nation_cumulative.csv")! as URL)
+                let csv: CSV = try CSV(string: csvData)
+                promise(.success(csv))
+            } catch let error {
+                promise(.failure(error))
+            }
+        }
+    }
+    
+    static func parseCsv(csv: CSV) -> AnyPublisher<[String:String], Error>{
+
+        return Record<[String:String], Error> { promise in
+            do {
+                var array = [[String:String]]()
+                
+                try csv.enumerateAsDict {
+                    dict in array.append(dict)
+                }
+                
+                for s in array {
+                    promise.receive(s)
+                }
+            } catch let error {
+                promise.receive(completion: .failure(error))
+            }
+            
+            promise.receive(completion: .finished)
+        }.eraseToAnyPublisher()
+    }
+    
+    public func fetchCsv() -> AnyPublisher<[String:String], Error> {
+        return CsvHandler.getCsv()
+            .subscribe(on: DispatchQueue.global())
+            .flatMap(CsvHandler.parseCsv)
+            .receive(on: DispatchQueue.main)
+            .eraseToAnyPublisher()
+    }
+    
+}
 
 class CsvParser: NSObject {
     
@@ -38,25 +84,33 @@ class CsvParser: NSObject {
         return observable
     }
     
-//    private static func transformElement(element: [String : [String]]) -> Observable<Data> {
-//        return Observable.just(Data())
-////            date: element["date"],
-////            hospitalized: element["hospitalized"],
-////            intensive: element["intensive"],
-////            selfQuarantine: element["selfQuarantine"],
-////            active: element["active"],
-////            healed: element["healed"],
-////            dead: element["dead"],
-////            total: element["total"],
-////            tested: element["tested"],
-//        
-//    }
+    private static func transformElement(element: CSV) -> Observable<[String: String]> {
+        let observable = Observable<[String:String]>.create { observer in
+            do{
+                
+                try element.enumerateAsDict {
+                    dict in observer.onNext(dict)
+                }
+                
+            } catch let error {
+                observer.onError(error)
+            }
+
+            observer.onCompleted()
+            
+            return Disposables.create()
+        }
+        
+        return observable
+    }
     
-//    public static func parseCsv(csvElement: Observable<[String : [String]]>) -> Observable<Data> {
-//        return csvElement
-//            .subscribeOn(ConcurrentDispatchQueueScheduler(qos: .background))
-//            .flatMap(transformElement)
-//            .observeOn(MainScheduler.instance)
-//    }
+    public static func parseCsv(csvElement: Observable<CSV>) -> Observable<[String:String]> {
+        return csvElement
+            .subscribeOn(ConcurrentDispatchQueueScheduler(qos: .background))
+            .flatMap(transformElement)
+            .observeOn(MainScheduler.instance)
+            .asObservable()
+    }
     
 }
+

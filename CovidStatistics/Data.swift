@@ -7,3 +7,15 @@
 //
 
 import Foundation
+
+struct Data {
+    let date: String
+    let hospitalized: Int
+    let intensive: Int
+    let selfQuarantine: Int
+    let active: Int
+    let healed: Int
+    let dead: Int
+    let total: Int
+    let tested: Int
+}
